@@ -99,12 +99,18 @@ async function fetchLatestVersion(timeoutMs = 15000) {
 }
 
 /**
- * Probe whether npm can actually resolve the concrete version using the same
- * resolution path as the install (pacote + the `--prefer-offline` cache).
- * A dist-tag can point at a version whose object is published but which is
- * still missing from the packument npm sees, so `npm install` fails with
- * ETARGET even though the version endpoint answers 200. Running `npm view`
- * with the same flags reproduces that failure during the check phase.
+ * Probe whether npm can actually resolve the concrete version against the
+ * LIVE registry packument. A dist-tag can point at a version whose object is
+ * published but which is still missing from the packument npm sees, so
+ * `npm install` fails with ETARGET even though the version endpoint answers
+ * 200. Running `npm view` reproduces that failure during the check phase.
+ *
+ * NOTE: this must NOT use `--prefer-offline`. That flag skips npm's staleness
+ * check, so a stale local packument cache would report "No matching version
+ * found" for a version that IS already published — e.g. a user has to run
+ * `npm update -g @deepseek-ai/dsh` once to refresh the cache before the
+ * desktop check would pass. `--prefer-online` forces a fresh packument fetch
+ * (which also warms the cache for the subsequent `--prefer-offline` install).
  * @param {string} version
  * @returns {Promise<boolean>}
  */
@@ -112,7 +118,7 @@ async function probeNpmVersion(version) {
   try {
     const result = await runNpm([
       'view', `${PKG}@${version}`, 'version',
-      '--no-audit', '--no-fund', '--prefer-offline',
+      '--no-audit', '--no-fund', '--prefer-online',
     ])
     if (result.code !== 0 && /ETARGET|No matching version found|E404|No match found for version/i.test(result.stderr)) return false
   } catch {
