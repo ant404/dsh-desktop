@@ -1,0 +1,5 @@
+node_modules/
+dist/
+resources/bundle/
+.test-home/
+*.log

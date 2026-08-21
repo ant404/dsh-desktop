@@ -1,0 +1,50 @@
+{
+  "name": "dsh-desktop",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness (dsh) packaged as a Windows desktop application",
+  "main": "main.js",
+  "private": true,
+  "author": {
+    "name": "DeepSeek Harness Desktop"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "prepare:runtime": "node scripts/prepare-runtime.cjs",
+    "test:server": "node scripts/test-server.cjs",
+    "build": "npm run prepare:runtime && electron-builder --win dir && node scripts/zip-dist.cjs",
+    "build:dir": "npm run prepare:runtime && electron-builder --win dir",
+    "build:zip": "node scripts/zip-dist.cjs"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "ai.deepseek.dsh.desktop",
+    "productName": "DSH Desktop",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "server.cjs",
+      "package.json",
+      "build/icon.png"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bundle",
+        "to": "bundle"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "dir", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  }
+}
