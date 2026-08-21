@@ -110,7 +110,7 @@ async function fetchLatestVersion(timeoutMs = 15000) {
  * found" for a version that IS already published — e.g. a user has to run
  * `npm update -g @deepseek-ai/dsh` once to refresh the cache before the
  * desktop check would pass. `--prefer-online` forces a fresh packument fetch
- * (which also warms the cache for the subsequent `--prefer-offline` install).
+ * (the install step below also uses `--prefer-online`, so both stay in sync).
  * @param {string} version
  * @returns {Promise<boolean>}
  */
@@ -189,7 +189,12 @@ async function applyUpdate(dataDir, onPhase, config = {}) {
     'install',
     '--prefix', work,
     '--no-audit', '--no-fund',
-    '--prefer-offline',
+    // MUST be --prefer-online too: --prefer-offline skips npm's staleness
+    // check, so a stale local packument for any dependency (e.g.
+    // @deepseek-ai/dsh-agent-instructions@^0.1.1-rc.2) makes the install fail
+    // with ETARGET even though the version is published. prefer-online fetches
+    // fresh packuments (and still reuses cached tarballs when possible).
+    '--prefer-online',
     '--dangerously-allow-all-scripts',
     `${PKG}@${latest}`,
   ])
