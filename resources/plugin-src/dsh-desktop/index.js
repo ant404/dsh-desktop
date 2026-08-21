@@ -98,6 +98,29 @@ async function fetchLatestVersion(timeoutMs = 15000) {
   return latest
 }
 
+/**
+ * Probe whether npm can actually resolve the concrete version using the same
+ * resolution path as the install (pacote + the `--prefer-offline` cache).
+ * A dist-tag can point at a version whose object is published but which is
+ * still missing from the packument npm sees, so `npm install` fails with
+ * ETARGET even though the version endpoint answers 200. Running `npm view`
+ * with the same flags reproduces that failure during the check phase.
+ * @param {string} version
+ * @returns {Promise<boolean>}
+ */
+async function probeNpmVersion(version) {
+  try {
+    const result = await runNpm([
+      'view', `${PKG}@${version}`, 'version',
+      '--no-audit', '--no-fund', '--prefer-offline',
+    ])
+    if (result.code !== 0 && /ETARGET|No matching version found|E404|No match found for version/i.test(result.stderr)) return false
+  } catch {
+    /* npm missing etc: do not block check; apply will surface the real error */
+  }
+  return true
+}
+
 /** Locate npm's CLI entry (npm-cli.js) via the npm.cmd shim on PATH. */
 function resolveNpmCli() {
   const pathEntries = (process.env.PATH || '').split(';')
@@ -165,7 +188,11 @@ async function applyUpdate(dataDir, onPhase, config = {}) {
     `${PKG}@${latest}`,
   ])
   if (result.code !== 0) {
-    throw new Error(`npm install failed (code ${result.code}): ${result.stderr.slice(0, 400)}`)
+    const stderr = result.stderr.slice(0, 400)
+    if (/ETARGET|No matching version found/i.test(stderr)) {
+      throw new Error(`${latest} 已发布但 npm 索引尚未同步，暂不可更新，请稍后重试（原始错误：${stderr}）`)
+    }
+    throw new Error(`npm install failed (code ${result.code}): ${stderr}`)
   }
 
   const installed = join(work, 'node_modules', ...PKG_SEGMENTS)
@@ -326,7 +353,18 @@ function registerRoutes(ctx, config) {
           }
         } else {
           const latest = await fetchLatestVersion()
-          send(200, { current, latest, updateAvailable: isNewer(latest, current) })
+          const updateAvailable = isNewer(latest, current)
+          if (updateAvailable && !(await probeNpmVersion(latest))) {
+            send(200, {
+              current,
+              latest,
+              updateAvailable: false,
+              uninstallable: true,
+              reason: `${latest} 已发布但 npm 索引尚未同步，暂不可更新，请稍后重试`,
+            })
+            return
+          }
+          send(200, { current, latest, updateAvailable })
         }
       } catch (error) {
         send(409, { error: String(error?.message ?? error) })

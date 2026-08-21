@@ -162,6 +162,8 @@ window.__ModuleLoader__.load({
               if (action === 'apply' && body.updated === true) {
                 clearPoll()
                 checkState[1]({ updated: true, message: body.version ? t.updated + '（' + body.version + '）' : t.updated })
+              } else if (body.uninstallable === true) {
+                checkState[1]({ isError: true, message: body.reason || t.error })
               } else if (body.updateAvailable === true) {
                 checkState[1]({ message: t.updateAvailable + '：' + body.latest + '（当前 ' + body.current + '）', available: true })
               } else {
@@ -530,6 +532,8 @@ window.__ModuleLoader__.load({
               if (action === 'apply' && body.updated === true) {
                 clearPoll()
                 checkState[1]({ updated: true, message: body.version ? t.updated + '（' + body.version + '）' : t.updated })
+              } else if (body.uninstallable === true) {
+                checkState[1]({ isError: true, message: body.reason || t.error })
               } else if (body.updateAvailable === true) {
                 checkState[1]({ message: t.updateAvailable + '：' + body.latest + '（当前 ' + body.current + '）', available: true })
               } else {
