@@ -24,6 +24,8 @@ dsh-desktop/
 │   └── plugin-src/          # dsh-desktop 插件源码（host：版本/更新路由；client：设置卡片）
 ├── scripts/
 │   ├── prepare-runtime.cjs  # 复制全局 dsh + node.exe + 原生缓存 + 插件到 resources/bundle
+│   ├── render-icon.cjs      # 用项目自带的 Electron 离屏渲染 build/icon-src.html，生成保留透明通道的 build/icon.png
+│   ├── rollback-runtime.ps1 # 「检查更新」装上新运行时失败时，把 data/runtime/dsh-runtime.previous 换回为活动运行时（需先完全关闭 DSH Desktop）
 │   ├── test-server.cjs      # 离线冒烟测试（不起 Electron；DSH_TEST_HOME 可指向真实 ~/.dsh）
 │   ├── test-plugin.cjs      # 插件注入链测试（overlay → 路由 → client bundle）
 │   └── zip-dist.cjs         # 把 win-unpacked 打成 zip 分发包
